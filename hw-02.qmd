@@ -1,30 +1,105 @@
 ---
 title: "HW 02"
-author: "INSERT YOUR NAME HERE"
+author: "Joey Garcia"
 format: 
   html:
     embed-resources: true
 toc: true
 ---
 
+```{r setup and load libraries}
+if (!require("pacman")) 
+  install.packages("pacman")
+
+pacman::p_load(tidyverse, lubridate, glue, scales, dplyr, ggthemes, # most necessary libs.
+               ggridges, # density ridge plots and themes
+               dsbox,    # data science in a box (datasets)
+               fs        # filesystem lib.
+               )       
+
+# set theme for ggplot2
+ggplot2::theme_set(ggplot2::theme_minimal(base_size = 14))
+
+# set width of code output
+options(width = 65)
+
+# set figure parameters for knitr
+knitr::opts_chunk$set(
+  fig.width = 7,        # 7" width
+  fig.asp = 0.618,      # the golden ratio
+  fig.retina = 3,       # dpi multiplier for displaying HTML output on retina
+  fig.align = "center", # center align figures
+  dpi = 300             # higher dpi, sharper image
+)
+
+```
+
 ## 1 - A new day, a new plot, a new geom
 
 ```{r}
-#| label: label-me-1
+#| label: ridgeline-plot-setup
+
+# Load and test data
+airbnb <- dsbox::edibnb
+glimpse(airbnb)
+summary(airbnb)
+
+```
+
+```{r}
+#| label: ridgeline-plot 
+
+# review scores of Edinburgh neighborhoods ridgeline plot
+airbnb |>
+  filter(between(review_scores_rating, 85, 100)) |> # reduces axis
+  filter(!is.na(neighbourhood)) |> # filters empty neighborhood rows
+  ggplot(aes(x = review_scores_rating, y = neighbourhood, fill = neighbourhood)) +
+  geom_density_ridges(scale = 4, rel_min_height = 0.1) + # scale and cut tail of density
+  scale_fill_cyclical(values = c("skyblue1", "cornsilk4")) +
+  scale_y_discrete(expand = c(0, 0)) + 
+  scale_x_continuous(expand = c(0, 0)) + # reduces padding
+  coord_cartesian(clip = "off") +
+  labs(
+    title = "Ridgeline plot", 
+    subtitle = "listings from Airbnb in Edinburgh, Scotland",
+    x = "Review Score Ratings",
+    y = "Edinburgh\nNeighborhoods", 
+    caption = "Source: From Opensource dataset dsbox known as 'edibnb'."
+  )+
+  theme_ridges()
 
 ```
 
 ## 2 - Foreign Connected PACs
 
 ```{r}
-#| label: label-me-2
+#| label: Foreign-connected-pac
+# get a list of files with "Foreign Connected PAC" in their names
+list_of_files <- dir_ls(path = "data", regexp = "Foreign Connected PAC")
 
+# read all files and row bind them
+# track file name with column called year
+pac <- read_csv(list_of_files, id = "year")
+glimpse(pac)
 ```
 
 ## 3 - Median housing prices in the US
 
+```{r}
+#| label: lab
+
+```
 
 ## 4 - Expect More. Plot More.
 
+```{r}
+#| label: lab
+
+```
 
 ## 5 - Mirror, mirror on the wall, who’s the ugliest of them all?
+
+```{r}
+#| label: lab
+
+```
