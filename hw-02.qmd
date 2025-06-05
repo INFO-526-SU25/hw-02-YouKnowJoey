@@ -14,7 +14,8 @@ if (!require("pacman"))
 pacman::p_load(tidyverse, lubridate, glue, scales, dplyr, ggthemes, # most necessary libs.
                ggridges, # density ridge plots and themes
                dsbox,    # data science in a box (datasets)
-               fs        # filesystem lib.
+               fs,       # filesystem lib.
+               janitor   # clean data 
                )       
 
 # set theme for ggplot2
@@ -73,15 +74,104 @@ airbnb |>
 ## 2 - Foreign Connected PACs
 
 ```{r}
-#| label: Foreign-connected-pac
+#| label: Foreign-connected-pac-data-cleaning
 # get a list of files with "Foreign Connected PAC" in their names
 list_of_files <- dir_ls(path = "data", regexp = "Foreign Connected PAC")
 
 # read all files and row bind them
 # track file name with column called year
 pac <- read_csv(list_of_files, id = "year")
-glimpse(pac)
+
+# Clean data
+pac <- pac |>
+  # Normalize names
+  clean_names() |>
+  
+  # year into <int> 
+  mutate(year = str_extract(year, "(?<=-)\\d{4}")) |>
+  
+  # separate columns by delimiter
+  separate(country_of_origin_parent_company,
+           into = c("country_of_origin", "parent_company"),
+           sep = "/"
+           ) |>
+  
+  # Change data type to <dbl>
+  mutate(total = as.numeric(gsub("[$,]", "", total))) |>
+  mutate(dems = as.numeric(gsub("[$,]", "", dems))) |>
+  mutate(repubs = as.numeric(gsub("[$,]", "", repubs))) |>
+  
+  # pivot longer by "party"
+  pivot_longer(cols = c("dems", "repubs"),
+               names_to = "party",
+               values_to = "amount"
+               ) |>
+  # rename columns
+  mutate(party = recode(party, dems = "Democrat",repubs = "Republican"))
+
+unique(pac$country_of_origin)
 ```
+
+
+```{r}
+#| label: Foreign-connected-pac-UK-contributions
+
+pac |>
+  filter(country_of_origin == "UK") |>
+  # Group & summarize total contributions
+  group_by(year, party) |>
+  summarise(total_contributions = sum(amount), .groups = "drop") |>
+  
+  ggplot(aes(x = year, y = total_contributions, colour = party, group = party)) +
+  geom_line(size = 1) +
+  scale_color_manual(values = c("Democrat" = "blue", "Republican" = "red")) +
+  scale_y_continuous(labels = dollar_format(scale = 1e-6, suffix = "M")) +
+  labs(
+    title = "Contributions to US political parties from UK connected PACs",
+    x = "Year",
+    y = "Total Amount",
+    colour = "Party"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title.y = element_text(hjust = 0),
+    axis.title.x = element_text(hjust = 0),
+    legend.position = c(0.95, 0.05),
+    legend.justification = c("right", "bottom")
+  )
+```
+
+``` {r}
+#| label: Foreign-connected-pac-Israel-contributions
+
+pac |>
+  filter(country_of_origin == "Spain") |>
+  # Group & summarize total contributions
+  group_by(year, party) |>
+  summarise(total_contributions = sum(amount), .groups = "drop") |>
+  
+  ggplot(aes(x = year, y = total_contributions, colour = party, group = party)) +
+  geom_line(size = 1) +
+  scale_color_manual(values = c("Democrat" = "blue", "Republican" = "red")) +
+  scale_y_continuous(labels = dollar) +
+  labs(
+    title = "Contributions to US political parties from Spain connected PACs",
+    x = "Year",
+    y = "Total Amount",
+    colour = "Party"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title.y = element_text(hjust = 0),
+    axis.title.x = element_text(hjust = 0),
+    legend.position = c(0.95, 0.65),
+    legend.justification = c("right", "bottom")
+  )
+```
+
+### Foreign Connected PACs interpretation (Spain)
+
+Spain connected PACs initially contributed the majority of the contributions to the Republican Party. During the 2020 US election year, the paradigm shifted and the Democrat Party received the majority of the contributions. As we move into 2022, we start to see more contributions going to the Democrat Party.  
 
 ## 3 - Median housing prices in the US
 
