@@ -130,7 +130,8 @@ pac |>
     title = "Contributions to US political parties from UK connected PACs",
     x = "Year",
     y = "Total Amount",
-    colour = "Party"
+    colour = "Party",
+    caption = "Source: OpenSecrets.org"
   ) +
   theme_minimal() +
   theme(
@@ -158,7 +159,8 @@ pac |>
     title = "Contributions to US political parties from Spain connected PACs",
     x = "Year",
     y = "Total Amount",
-    colour = "Party"
+    colour = "Party",
+    caption = "Source: OpenSecrets.org"
   ) +
   theme_minimal() +
   theme(
@@ -176,7 +178,125 @@ Spain connected PACs initially contributed the majority of the contributions to 
 ## 3 - Median housing prices in the US
 
 ```{r}
-#| label: lab
+#| label: Median-house-recession-data-cleaning
+
+median_housing <- read.csv(file = "data/median-housing.csv")
+
+recessions <-read.csv(file = "data/recessions.csv")
+
+
+recessions <- recessions |>
+  # Change data type to <date>
+  mutate(Peak = ymd(Peak)) |>
+  mutate(Trough = ymd(Trough))
+
+median_housing <- median_housing |>
+  # Change data type to <date>
+  mutate(DATE = ymd(DATE)) |>
+  # rename columns
+  rename(
+    date = DATE,
+    price = MSPUS
+  ) |>
+  # create binary classification of recession peaks and troughs
+  mutate(
+    in_recession = map_lgl(
+      date, ~ any(.x >= recessions$Peak & .x <= recessions$Trough)
+      )
+    )
+```
+
+``` {r}
+#| label:  Median-house-plot
+
+median_housing |>
+  ggplot(aes(x = date, y = price)) +
+  geom_line(size = 1, colour = "blue2") +
+  # Format x axis scale
+  scale_x_date(
+    breaks = seq(as.Date("1965-01-01"), as.Date("2020-01-01"), by = "5 year"),
+    date_labels = "%Y"
+  ) +
+  # Format y axis scale
+  scale_y_continuous(
+    labels = dollar_format(prefix = ""),
+    breaks = seq(0, 400000, by = 40000)
+  ) +
+  labs(
+    title = "Median sales price of houses sold in the United States",
+    subtitle = "Not seasonally adjusted",
+    x = NULL,
+    y = "Dollars",
+    caption = "Sources: Census; HUD"
+  ) + 
+  theme_minimal() +
+  # configure grids and title position
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    plot.title.position = "plot",
+    plot.title = element_text(hjust = 0),
+    plot.subtitle = element_text(hjust = 0)
+  )
+
+```
+
+``` {r}
+#| label: Median-house-recession-plot
+
+recession_periods <- tibble(
+  start = median_housing$date[starts],
+  end = median_housing$date[ends],
+  in_recession = rle_rec$values
+  ) |> 
+  filter(in_recession)
+
+
+median_housing |>
+  ggplot(aes(x = date, y = price)) +
+  geom_line(size = 1, colour = "blue2") +
+  geom_rect(
+    data = recession_periods_adjusted,
+    aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf),
+    inherit.aes = FALSE,
+    fill = "gray",
+    alpha = 0.3
+  ) +
+  # Format x axis scale
+  scale_x_date(
+    breaks = seq(as.Date("1965-01-01"), as.Date("2020-01-01"), by = "5 year"),
+    date_labels = "%Y"
+  ) +
+  # Format y axis scale
+  scale_y_continuous(
+    labels = dollar_format(prefix = ""),
+    breaks = seq(0, 400000, by = 40000)
+  ) +
+  labs(
+    title = "Median sales price of houses sold in the United States",
+    subtitle = "Not seasonally adjusted",
+    x = NULL,
+    y = "Dollars",
+    caption = "Sources: Census; HUD"
+  ) + 
+  theme_minimal() +
+  # configure grids and title position
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    plot.title.position = "plot",
+    plot.title = element_text(hjust = 0),
+    plot.subtitle = element_text(hjust = 0)
+  )
+
+```
+
+``` {r}
+#| label: Median-house-2019-2020-Quarter-plot
+
+
 
 ```
 
