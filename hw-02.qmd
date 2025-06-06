@@ -296,7 +296,37 @@ median_housing |>
 ``` {r}
 #| label: Median-house-2019-2020-Quarter-plot
 
+median_housing <- median_housing |>
+  mutate(year = year(date),
+         quarter = quarter(date),
+         year_quarter = paste0("Q", quarter, "\n", year), 
+         year_quarter = factor(year_quarter, levels = unique(year_quarter))
+  )
 
+median_housing |>
+  filter(year(date) %in% c(2019, 2020)) |>
+  ggplot(aes(x = year_quarter, y = price, group = 1)) +
+  geom_line(size = 1, color = "skyblue3") +
+  geom_point(color = "skyblue3", fill = "white", stroke = 1.2, shape = 21) +
+  scale_y_continuous(
+    limits = c(300000, 360000),
+    labels = dollar_format(prefix = ""),
+    breaks = seq(300000, 360000, by = 20000)
+  ) +
+  labs(
+    title = "Median sales price of houses sold in the United States",
+    subtitle = "Not seasonally adjusted",
+    x = NULL,
+    y = "Dollars",
+    caption = "Sources: Census; HUD"
+  ) + 
+  theme_minimal() +
+  # configure grids and title position
+  theme(
+    plot.title.position = "plot",
+    plot.title = element_text(hjust = 0),
+    plot.subtitle = element_text(hjust = 0)
+  )
 
 ```
 
