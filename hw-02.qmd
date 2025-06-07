@@ -308,32 +308,117 @@ median_housing |>
   ggplot(aes(x = year_quarter, y = price, group = 1)) +
   geom_line(size = 1, color = "skyblue3") +
   geom_point(color = "skyblue3", fill = "white", stroke = 1.2, shape = 21) +
+  scale_x_discrete(
+    labels = c('Q1', 'Q2', 'Q3', 'Q4', 'Q1', 'Q2', 'Q3', 'Q4'),
+    expand = c(0, 0)
+    ) +
   scale_y_continuous(
-    limits = c(300000, 360000),
+    limits = c(280000, 360000),
     labels = dollar_format(prefix = ""),
-    breaks = seq(300000, 360000, by = 20000)
+    breaks = seq(300000, 360000, by = 20000),
+    expand = c(0.01, 0)
   ) +
   labs(
     title = "Median sales price of houses sold in the United States",
     subtitle = "Not seasonally adjusted",
     x = NULL,
-    y = "Dollars",
-    caption = "Sources: Census; HUD"
-  ) + 
+    y = "Dollars"
+  ) +
+  # Place the 2019 and 2020 labels
+  annotate(
+    "text", 
+    x = 2.5, 
+    y = 290000, 
+    label = "2019", 
+    size = 4
+  ) +
+  annotate(
+    "text", 
+    x = 6.5, 
+    y = 290000, 
+    label = "2020", 
+    size = 4
+  ) +
   theme_minimal() +
-  # configure grids and title position
+  # configure title position
   theme(
     plot.title.position = "plot",
     plot.title = element_text(hjust = 0),
-    plot.subtitle = element_text(hjust = 0)
-  )
+    plot.subtitle = element_text(hjust = 0),
+    plot.margin = margin(t = 10, r = 10, b = 30, l = 10) # bottom padding; x labels
+  ) +
+  coord_cartesian(ylim = c(300000, 360000), clip = "off") # allows annotation to be below x labels
 
 ```
 
 ## 4 - Expect More. Plot More.
 
+### Approach
+
+For the target iconic symbol, I plan to stack 3 circles on top of each other. The colors from largest to smallest will be red, white, then red. The text "Target" will be an annotation. Lastly, we will have an annotated circle with red as the color and fill equaling white; we will place a red 'R' over the shape prevviously described.
+
+The color red for the target coroporation is "#CC0000" and this was found at the website here [https://www.brandcolorcode.com/target].
+
 ```{r}
-#| label: lab
+#| label: target-symbol-recreation
+
+# Create 3 circles
+target <- tibble(
+  x = rep(0, 3), # replicate
+  y = rep(0, 3),
+  size = c(75, 50, 25),
+  fill = c("#CC0000", "white", "#CC0000"),
+  stroke = c(0, 0, 0)
+)
+
+target |>
+  ggplot(aes(x = x, y = y)) +
+  geom_point(aes(size = size, fill = fill), 
+             shape = 21, 
+             color = "#CC0000", 
+             stroke = 1.1) +
+  # 'Target' label
+  annotate(
+    "text", 
+    x = 0, 
+    y = 0, 
+    label = "Target",
+    color = "#CC0000",
+    size = 8,
+    fontface = "bold",
+    vjust = 7,
+    hjust = .6
+  ) +
+  # Registered Trademark circle
+  annotate(
+    "point",
+    x = 1, 
+    y = -4,
+    shape = 21,
+    size = 5,
+    fill = "white",
+    color = "#CC0000",
+    stroke = 1
+  ) +
+  # 'R' label
+  annotate(
+    "text", 
+    x = 1, 
+    y = -4, 
+    label = "R",
+    color = "#CC0000",
+    size = 3,
+    fontface = "bold",
+    vjust = .4,
+    hjust = .5
+  ) +
+  scale_size_identity() + # keep size
+  scale_fill_identity() + # keep color
+  coord_cartesian(        # Adjustable coordinate system
+    xlim = c(-6, 6),
+    ylim = c(-5, 4),
+    clip = "off") +
+  theme_void()            # white background
 
 ```
 
