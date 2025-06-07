@@ -15,7 +15,8 @@ pacman::p_load(tidyverse, lubridate, glue, scales, dplyr, ggthemes, # most neces
                ggridges, # density ridge plots and themes
                dsbox,    # data science in a box (datasets)
                fs,       # filesystem lib.
-               janitor   # clean data 
+               janitor,  # clean data
+               palmerpenguins
                )       
 
 # set theme for ggplot2
@@ -425,6 +426,51 @@ target |>
 ## 5 - Mirror, mirror on the wall, who’s the ugliest of them all?
 
 ```{r}
-#| label: lab
+#| label: ugliest-of-them-all-plot
+
+penguins |>
+  ggplot(aes(x = flipper_length_mm, fill = species)) +
+  geom_density(alpha = 0.7) +
+  facet_wrap(~ island) +
+  scale_fill_manual(
+    values = c(
+      "Adelie" = "#FF00FF",
+      "Chinstrap" = "#00FFFF",
+      "Gentoo" = "#FFFF00"
+    )
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    # Plot Title
+    plot.title = element_text(
+      face = "bold", size = 22, color = "#32FF00", hjust = 0.5
+    ),
+    plot.subtitle = element_text(
+      size = 16, color = "#32FF00", hjust = 0.5
+    ),
+    plot.caption = element_text(
+      size = 16, color = "#32FF00"
+    ),
+    # Background
+    panel.background = element_rect(fill = "#FFA500", color = NA),
+    plot.background = element_rect(fill = "#000000"),
+    strip.background = element_rect(fill = "#00FF00", color = NA),
+    strip.text = element_text(color = "#FF0000", face = "bold"),
+    # Legend
+    legend.background = element_rect(fill = "#0000FF"),
+    legend.key = element_rect(fill = "#00FF00"),
+    # Axis
+    axis.title = element_text(size = 14, color = "#FFFFFF"),
+    axis.text = element_text(color = "#FFFF00"),
+  ) +
+  labs(
+    title = "Flipper Length Density",
+    subtitle = "by Species and Island",
+    x = "Flipper Length (mm)",
+    y = "Density",
+    caption = "The Source (TM)"
+  )
+  
 
 ```
+
