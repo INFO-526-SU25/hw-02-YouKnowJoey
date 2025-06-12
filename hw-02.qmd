@@ -97,7 +97,8 @@ pac <- pac |>
   separate(
     country_of_origin_parent_company,
     into = c("country_of_origin", "parent_company"),
-    sep = "/"
+    sep = "/",
+    extra = "merge"
     ) |>
   
   # Change data type to <dbl>
@@ -127,7 +128,7 @@ pac |>
   summarise(total_contributions = sum(amount), .groups = "drop") |>
   
   ggplot(aes(x = year, y = total_contributions, colour = party, group = party)) +
-  geom_line(size = 1) +
+  geom_line(linewidth = 1) +
   
   # Configure scaling
   scale_color_manual(values = c("Democrat" = "blue", "Republican" = "red")) +
@@ -160,7 +161,7 @@ pac |>
   summarise(total_contributions = sum(amount), .groups = "drop") |>
   
   ggplot(aes(x = year, y = total_contributions, colour = party, group = party)) +
-  geom_line(size = 1) +
+  geom_line(linewidth = 1) +
   
   # Configure scaling
   scale_color_manual(values = c("Democrat" = "blue", "Republican" = "red")) +
