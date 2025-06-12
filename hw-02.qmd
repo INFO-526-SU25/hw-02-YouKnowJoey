@@ -43,8 +43,6 @@ knitr::opts_chunk$set(
 
 # Load and test data
 airbnb <- dsbox::edibnb
-glimpse(airbnb)
-summary(airbnb)
 
 ```
 
@@ -55,12 +53,16 @@ summary(airbnb)
 airbnb |>
   filter(between(review_scores_rating, 85, 100)) |> # reduces axis
   filter(!is.na(neighbourhood)) |> # filters empty neighborhood rows
+  
   ggplot(aes(x = review_scores_rating, y = neighbourhood, fill = neighbourhood)) +
   geom_density_ridges(scale = 4, rel_min_height = 0.1) + # scale and cut tail of density
+  
+  # Configure scaling
   scale_fill_cyclical(values = c("skyblue1", "cornsilk4")) +
   scale_y_discrete(expand = c(0, 0)) + 
   scale_x_continuous(expand = c(0, 0)) + # reduces padding
   coord_cartesian(clip = "off") +
+  
   labs(
     title = "Ridgeline plot", 
     subtitle = "listings from Airbnb in Edinburgh, Scotland",
@@ -92,10 +94,11 @@ pac <- pac |>
   mutate(year = str_extract(year, "(?<=-)\\d{4}")) |>
   
   # separate columns by delimiter
-  separate(country_of_origin_parent_company,
-           into = c("country_of_origin", "parent_company"),
-           sep = "/"
-           ) |>
+  separate(
+    country_of_origin_parent_company,
+    into = c("country_of_origin", "parent_company"),
+    sep = "/"
+    ) |>
   
   # Change data type to <dbl>
   mutate(total = as.numeric(gsub("[$,]", "", total))) |>
@@ -103,14 +106,14 @@ pac <- pac |>
   mutate(repubs = as.numeric(gsub("[$,]", "", repubs))) |>
   
   # pivot longer by "party"
-  pivot_longer(cols = c("dems", "repubs"),
-               names_to = "party",
-               values_to = "amount"
-               ) |>
+  pivot_longer(
+    cols = c("dems", "repubs"),
+    names_to = "party",
+    values_to = "amount"
+    ) |>
   # rename columns
   mutate(party = recode(party, dems = "Democrat",repubs = "Republican"))
 
-unique(pac$country_of_origin)
 ```
 
 
@@ -125,8 +128,11 @@ pac |>
   
   ggplot(aes(x = year, y = total_contributions, colour = party, group = party)) +
   geom_line(size = 1) +
+  
+  # Configure scaling
   scale_color_manual(values = c("Democrat" = "blue", "Republican" = "red")) +
   scale_y_continuous(labels = dollar_format(scale = 1e-6, suffix = "M")) +
+  
   labs(
     title = "Contributions to US political parties from UK connected PACs",
     x = "Year",
@@ -134,6 +140,7 @@ pac |>
     colour = "Party",
     caption = "Source: OpenSecrets.org"
   ) +
+  
   theme_minimal() +
   theme(
     axis.title.y = element_text(hjust = 0),
@@ -154,8 +161,11 @@ pac |>
   
   ggplot(aes(x = year, y = total_contributions, colour = party, group = party)) +
   geom_line(size = 1) +
+  
+  # Configure scaling
   scale_color_manual(values = c("Democrat" = "blue", "Republican" = "red")) +
   scale_y_continuous(labels = dollar) +
+
   labs(
     title = "Contributions to US political parties from Spain connected PACs",
     x = "Year",
@@ -163,6 +173,7 @@ pac |>
     colour = "Party",
     caption = "Source: OpenSecrets.org"
   ) +
+
   theme_minimal() +
   theme(
     axis.title.y = element_text(hjust = 0),
@@ -185,7 +196,7 @@ median_housing <- read.csv(file = "data/median-housing.csv")
 
 recessions <-read.csv(file = "data/recessions.csv")
 
-
+# Normalize data
 recessions <- recessions |>
   # Change data type to <date>
   mutate(Peak = ymd(Peak)) |>
@@ -210,19 +221,21 @@ median_housing <- median_housing |>
 ``` {r}
 #| label:  Median-house-plot
 
-median_housing |>
+median_housing_plot <- median_housing |>
   ggplot(aes(x = date, y = price)) +
   geom_line(size = 1, colour = "blue2") +
-  # Format x axis scale
+
+  
+  # Configure scaling
   scale_x_date(
     breaks = seq(as.Date("1965-01-01"), as.Date("2020-01-01"), by = "5 year"),
     date_labels = "%Y"
   ) +
-  # Format y axis scale
   scale_y_continuous(
     labels = dollar_format(prefix = ""),
     breaks = seq(0, 400000, by = 40000)
   ) +
+
   labs(
     title = "Median sales price of houses sold in the United States",
     subtitle = "Not seasonally adjusted",
@@ -230,6 +243,7 @@ median_housing |>
     y = "Dollars",
     caption = "Sources: Census; HUD"
   ) + 
+
   theme_minimal() +
   # configure grids and title position
   theme(
@@ -241,55 +255,47 @@ median_housing |>
     plot.subtitle = element_text(hjust = 0)
   )
 
+median_housing_plot
+
 ```
 
 ``` {r}
 #| label: Median-house-recession-plot
 
-recession_periods <- tibble(
-  start = median_housing$date[starts],
-  end = median_housing$date[ends],
-  in_recession = rle_rec$values
-  ) |> 
-  filter(in_recession)
+
+# Identify where recession starts and ends
+recession_periods <- median_housing |>
+  mutate(
+    in_recession = as.logical(in_recession),
+    recession_shift = lag(in_recession, default = FALSE),
+    change = in_recession != recession_shift
+  ) |>
+  filter(change) |>
+  mutate(
+    period = cumsum(in_recession)
+  ) |>
+  group_by(period) |>
+  summarise(
+    start = min(date),
+    end = max(date),
+    .groups = "drop"
+  ) |>
+  filter(period != 0) 
 
 
-median_housing |>
-  ggplot(aes(x = date, y = price)) +
-  geom_line(size = 1, colour = "blue2") +
-  geom_rect(
-    data = recession_periods_adjusted,
-    aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf),
-    inherit.aes = FALSE,
-    fill = "gray",
-    alpha = 0.3
-  ) +
-  # Format x axis scale
-  scale_x_date(
-    breaks = seq(as.Date("1965-01-01"), as.Date("2020-01-01"), by = "5 year"),
-    date_labels = "%Y"
-  ) +
-  # Format y axis scale
-  scale_y_continuous(
-    labels = dollar_format(prefix = ""),
-    breaks = seq(0, 400000, by = 40000)
+median_housing_plot + geom_rect(
+  data = recession_periods,
+  aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf),
+  inherit.aes = FALSE,
+  fill = "gray",
+  alpha = 0.3
   ) +
   labs(
     title = "Median sales price of houses sold in the United States",
     subtitle = "Not seasonally adjusted",
     x = NULL,
     y = "Dollars",
-    caption = "Sources: Census; HUD"
-  ) + 
-  theme_minimal() +
-  # configure grids and title position
-  theme(
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank(),
-    panel.grid.minor.y = element_blank(),
-    plot.title.position = "plot",
-    plot.title = element_text(hjust = 0),
-    plot.subtitle = element_text(hjust = 0)
+    caption = "Shaded areas indicate U.S. recessions\nSources: Census; HUD"
   )
 
 ```
@@ -309,6 +315,8 @@ median_housing |>
   ggplot(aes(x = year_quarter, y = price, group = 1)) +
   geom_line(size = 1, color = "skyblue3") +
   geom_point(color = "skyblue3", fill = "white", stroke = 1.2, shape = 21) +
+  
+  # Configure scaling
   scale_x_discrete(
     labels = c('Q1', 'Q2', 'Q3', 'Q4', 'Q1', 'Q2', 'Q3', 'Q4'),
     expand = c(0, 0)
@@ -319,12 +327,7 @@ median_housing |>
     breaks = seq(300000, 360000, by = 20000),
     expand = c(0.01, 0)
   ) +
-  labs(
-    title = "Median sales price of houses sold in the United States",
-    subtitle = "Not seasonally adjusted",
-    x = NULL,
-    y = "Dollars"
-  ) +
+
   # Place the 2019 and 2020 labels
   annotate(
     "text", 
@@ -340,6 +343,14 @@ median_housing |>
     label = "2020", 
     size = 4
   ) +
+
+  labs(
+    title = "Median sales price of houses sold in the United States",
+    subtitle = "Not seasonally adjusted",
+    x = NULL,
+    y = "Dollars"
+  ) +
+
   theme_minimal() +
   # configure title position
   theme(
@@ -429,6 +440,7 @@ target |>
 #| label: ugliest-of-them-all-plot
 
 penguins |>
+  filter(is.finite(flipper_length_mm)) |> # removes NA, NaN, Inf
   ggplot(aes(x = flipper_length_mm, fill = species)) +
   geom_density(alpha = 0.7) +
   facet_wrap(~ island) +
@@ -439,6 +451,15 @@ penguins |>
       "Gentoo" = "#FFFF00"
     )
   ) +
+  
+  labs(
+    title = "Flipper Length Density",
+    subtitle = "by Species and Island",
+    x = "Flipper Length (mm)",
+    y = "Density",
+    caption = "The Source (TM)"
+  ) +
+
   theme_minimal(base_size = 14) +
   theme(
     # Plot Title
@@ -462,13 +483,6 @@ penguins |>
     # Axis
     axis.title = element_text(size = 14, color = "#FFFFFF"),
     axis.text = element_text(color = "#FFFF00"),
-  ) +
-  labs(
-    title = "Flipper Length Density",
-    subtitle = "by Species and Island",
-    x = "Flipper Length (mm)",
-    y = "Density",
-    caption = "The Source (TM)"
   )
   
 
